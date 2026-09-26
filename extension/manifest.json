@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "ScrollWright Exporter",
+  "version": "1.0.0",
+  "description": "Scrolls your Instagram saved folder and exports every reel link as a txt file for ScrollWright.",
+  "permissions": [],
+  "host_permissions": ["https://www.instagram.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

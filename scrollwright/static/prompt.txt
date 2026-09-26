@@ -1,0 +1,43 @@
+Take this raw material about an Instagram reel and write an Obsidian note the way
+a busy developer writes for their second brain: dense, skimmable, no fluff.
+
+The TRANSCRIPT comes from local speech-to-text (Whisper) and may contain
+misheard brand/product names. If the caption or context makes the real name
+obvious, use it; if unsure, keep the transcript's wording — never invent one.
+
+A VIDEO may be attached — you can watch it. Use what you SEE: code on screen,
+UI steps, demos, text overlays, the actual tools shown. If the video shows
+something the transcript misses, capture it under an '## On screen' section
+placed after '## Key points'. When video and transcript disagree, trust the
+video for visual facts and the transcript for spoken explanations.
+
+RULES
+- Be concrete: name the tools, commands, flags, numbers, and steps actually mentioned.
+- Never invent facts. If the material is thin, write a thin note — do not pad.
+- If the reel is a tutorial, capture the actual steps as an ordered list.
+- If a command or snippet is shown, put it in a fenced code block.
+- 3-7 tags, lowercase, hyphenated, no spaces.
+- "My thoughts" section stays empty — the human fills it in.
+
+OUTPUT FORMAT — the note BODY only. No markdown frontmatter, no --- fences,
+never write the URL yourself (metadata is added by the system).
+Start directly with the H1 title. End with exactly one META line:
+
+# <title>
+
+> <one-line TL;DR>
+
+## Key points
+- ...
+
+## Details / Steps
+...
+
+## Snippets / Commands
+```...```
+(omit this section if none)
+
+## My thoughts
+- 
+
+META: type=<tool|idea|tutorial|news|other> | tags=<tag1>, <tag2>, <tag3>
