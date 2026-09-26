@@ -35,37 +35,39 @@ commands. A reel with broken audio still gets noted from video + caption.
 
 ## Example output
 
-```markdown
+````markdown
 ---
-title: "Laya: Open-Source Fast Local Decision Engine"
+title: "Self-Host Your Analytics in 5 Minutes"
 source: instagram
-author: "albert.olgaard"
+author: "somecreator"
 saved: 2026-09-26
-type: tool
-tags: [local-llm, machine-learning, open-source, system-1]
-url: https://www.instagram.com/reel/DdjdN0CCcU8/
+type: tutorial
+tags: [self-hosted, docker, analytics, privacy]
+url: https://www.instagram.com/reel/CxYzAbCdEfG/
 status: inbox
 ---
 
-# Laya: Open-Source Fast Local Decision Engine
+# Self-Host Your Analytics in 5 Minutes
 
-> Open-source "System 1" decision engine running locally in ~30ms.
+> Swap Google Analytics for an open-source, cookieless alternative on a $5 VPS.
 
 ## Key points
-- **Tool**: `laya` (github.com/NandhaKishorM/laya), Apache-2.0
-- **Latency**: ~30 ms locally vs ~250 ms for cloud APIs
+- **Tool**: open-source web analytics, self-hosted, ~200 MB RAM
+- **Why**: no cookies, GDPR-friendly, your data never leaves your server
 
 ## On screen
-- Terminal demo: `pip install laya` → `department: billing (0.94)`
+- Dashboard demo: live visitor counter, pageviews chart, referrer table
 
 ## Snippets / Commands
 ```bash
-pip install laya
+docker run -d -p 3000:3000 ghcr.io/selfhosted/analytics:latest
 ```
 
-## My thoughts
-- (yours to fill)
-```
+## Details / Steps
+1. Point a subdomain at your VPS
+2. Run the container with a Postgres URL
+3. Add your site, paste the tracking snippet
+````
 
 ## Setup
 
