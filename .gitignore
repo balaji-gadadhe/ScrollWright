@@ -8,3 +8,4 @@ venv/
 *.db
 data/
 test-vault/
+PROGRESS.md
