@@ -96,9 +96,33 @@ python -m scrollwright process --limit 5    # just 5
 python -m scrollwright retry                # requeue failed reels
 python -m scrollwright reprocess [filter]   # re-run notes with the latest pipeline
 python -m scrollwright stats                # ledger status
+python -m scrollwright serve                # localhost bridge for the extension
 ```
 
+### Live mode: one click → one note
+
+Don't want the txt file round-trip at all? Run the local server and use the
+extension's popup:
+
+```bash
+python -m scrollwright serve        # leave it running while you browse
+```
+
+- Popup → **📝 Note this reel**: on any reel/post page, queues it instantly —
+  transcript + Gemini + note lands in your vault in ~1 minute.
+- Popup → **📥 Harvest saved folder**: auto-scrolls your saved folder (works on
+  `all-posts` *and* individual collections like `saved/dev-quests/`) and queues
+  everything new. The ledger dedupes, so re-harvests only add what's new.
+- Popup → **Notes folder**: point the pipeline at any vault folder on the fly
+  (updates `.env`).
+- Server offline? The extension falls back to the txt download automatically.
+
+The server binds `127.0.0.1` only and speaks to nothing but your browser.
+
 ### Bulk import: your ENTIRE saved folder
+
+> Prefer no txt files at all? Run `python -m scrollwright serve` and use the
+> extension popup's **Harvest** button — see *Live mode* above.
 
 Bundled Chrome extension (unpacked, no store):
 
@@ -148,7 +172,7 @@ that entire backlog under a dollar.
 ## Roadmap / ideas
 
 - [ ] YouTube support (yt-dlp already speaks it — widen the URL regex)
-- [ ] Extension auto-send to a local server (skip the txt file)
+- [x] Extension auto-send to a local server (skip the txt file) — shipped: `python -m scrollwright serve` + popup
 - [ ] RAG chat over your notes ("what was that color-palette tool?")
 - [ ] Repost detector via perceptual frame hashing
 - [ ] Weekly auto-MOC note linking the week's reels

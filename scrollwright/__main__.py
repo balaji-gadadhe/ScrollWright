@@ -9,6 +9,7 @@ Usage:
     python -m scrollwright retry               # requeue failed reels
     python -m scrollwright reprocess [filter]  # redo reels with current pipeline
     python -m scrollwright stats
+    python -m scrollwright serve               # localhost bridge for the extension
 """
 
 import sys
@@ -64,6 +65,12 @@ def cmd_stats(args: list[str]) -> None:
         print(f"  {k:<10} {v}")
 
 
+def cmd_serve(args: list[str]) -> None:
+    from scrollwright import server
+
+    server.main()
+
+
 def cmd_retry(args: list[str]) -> None:
     import sqlite3
     with sqlite3.connect(core.DB_PATH) as con:
@@ -89,10 +96,15 @@ def cmd_reprocess(args: list[str]) -> None:
     print(f"Requeued {n} reel(s) for reprocessing. Run:  python -m scrollwright process")
 
 
-COMMANDS = {"add": cmd_add, "process": cmd_process, "stats": cmd_stats, "retry": cmd_retry, "reprocess": cmd_reprocess}
+COMMANDS = {"add": cmd_add, "process": cmd_process, "stats": cmd_stats, "retry": cmd_retry, "reprocess": cmd_reprocess, "serve": cmd_serve}
 
 
 def main() -> None:
+    # Windows consoles default to legacy cp1252 — force UTF-8 so emoji/arrows
+    # in our output never crash a run mid-command.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
         print(__doc__)
         sys.exit(1)

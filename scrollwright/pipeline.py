@@ -271,9 +271,58 @@ def write_note(shortcode: str, out: dict, author: str | None) -> Path:
 # Pipeline
 # ---------------------------------------------------------------------------
 
-def process_batch(limit: int | None = None) -> None:
+def process_one(row) -> str:
+    """Run one claimed ledger row through the whole pipeline.
+
+    Returns "done" or "failed" (already recorded in the ledger).
+    Raises QuotaExhausted when Gemini's daily free tier is spent —
+    the row stays pending and the caller should stop for the day.
+    """
     from .media import fetch_audio, fetch_video, transcribe
 
+    sc, url = row["shortcode"], row["url"]
+    api_key = core.os.environ.get("GEMINI_API_KEY", "").strip()
+
+    audio = fetch_audio(url, sc)
+    transcript = transcribe(audio) if audio else None
+    if audio and audio.exists():
+        audio.unlink(missing_ok=True)
+
+    # Let Gemini watch the reel itself (screen content, demos, code).
+    # Disable in .env with WATCH_VIDEOS=false to save tokens/time.
+    watch = core.os.environ.get("WATCH_VIDEOS", "true").lower() != "false"
+    video = fetch_video(url, sc) if watch else None
+    video_uri = None
+    if video and api_key:
+        video_uri = upload_to_gemini(video, api_key)
+    if video and video.exists():
+        video.unlink(missing_ok=True)
+
+    meta = fetch_metadata(url, sc)
+    material = (
+        f"INSTAGRAM REEL MATERIAL\n"
+        f"URL: {url}\n"
+        f"AUTHOR: {meta['author'] or 'unknown'}\n"
+        f"CAPTION: {meta['caption'] or '(none available)'}\n"
+        f"TRANSCRIPT:\n{transcript or '(transcription unavailable)'}\n"
+    )
+    print(
+        f"    transcript: {len(transcript or '')} chars | caption: {len(meta['caption'] or '')} chars | watching: {'yes' if video_uri else 'no'}"
+    )
+
+    out = write_note_gemini(material, url, video_uri)
+    if out is None:
+        core.mark_failed(sc, "gemini returned nothing")
+        print("    [FAIL] no note produced")
+        return "failed"
+
+    path = write_note(sc, out, meta["author"])
+    core.mark_done(sc, str(path))
+    print(f"    [OK] {path.name}")
+    return "done"
+
+
+def process_batch(limit: int | None = None) -> None:
     # A fresh run means any previous run is dead — requeue its stuck rows.
     import sqlite3
     with sqlite3.connect(core.DB_PATH) as con:
@@ -291,47 +340,12 @@ def process_batch(limit: int | None = None) -> None:
     done = failed = 0
     try:
         for i, row in enumerate(rows, 1):
-            sc, url = row["shortcode"], row["url"]
-            print(f"[{i}/{len(rows)}] {url}")
+            print(f"[{i}/{len(rows)}] {row['url']}")
             try:
-                api_key = core.os.environ.get("GEMINI_API_KEY", "").strip()
-
-                audio = fetch_audio(url, sc)
-                transcript = transcribe(audio) if audio else None
-                if audio and audio.exists():
-                    audio.unlink(missing_ok=True)
-
-                # Let Gemini watch the reel itself (screen content, demos, code).
-                # Disable in .env with WATCH_VIDEOS=false to save tokens/time.
-                watch = core.os.environ.get("WATCH_VIDEOS", "true").lower() != "false"
-                video = fetch_video(url, sc) if watch else None
-                video_uri = None
-                if video and api_key:
-                    video_uri = upload_to_gemini(video, api_key)
-                if video and video.exists():
-                    video.unlink(missing_ok=True)
-
-                meta = fetch_metadata(url, sc)
-                material = (
-                    f"INSTAGRAM REEL MATERIAL\n"
-                    f"URL: {url}\n"
-                    f"AUTHOR: {meta['author'] or 'unknown'}\n"
-                    f"CAPTION: {meta['caption'] or '(none available)'}\n"
-                    f"TRANSCRIPT:\n{transcript or '(transcription unavailable)'}\n"
-                )
-                print(f"    transcript: {len(transcript or '')} chars | caption: {len(meta['caption'] or '')} chars | watching: {'yes' if video_uri else 'no'}")
-
-                out = write_note_gemini(material, url, video_uri)
-                if out is None:
-                    core.mark_failed(sc, "gemini returned nothing")
+                if process_one(row) == "done":
+                    done += 1
+                else:
                     failed += 1
-                    print("    [FAIL] no note produced")
-                    continue
-
-                path = write_note(sc, out, meta["author"])
-                core.mark_done(sc, str(path))
-                done += 1
-                print(f"    [OK] {path.name}")
             except QuotaExhausted:
                 print(f"\n[QUOTA] Daily Gemini limit reached at reel {i}/{len(rows)}.")
                 print(f"   {len(rows) - i + 1} reel(s) stay pending — run process again tomorrow.")

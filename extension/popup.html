@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      width: 320px; margin: 0; padding: 14px;
+      font-family: system-ui, sans-serif; font-size: 13px; color: #e5e7eb;
+      background: #111827;
+    }
+    h1 { font-size: 14px; margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; }
+    .dot.on { background: #22c55e; }
+    .row { margin-bottom: 10px; }
+    label { display: block; font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
+    input[type="text"] {
+      width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 6px;
+      border: 1px solid #374151; background: #1f2937; color: #e5e7eb; font-size: 12px;
+    }
+    input:focus { outline: none; border-color: #8b5cf6; }
+    button {
+      width: 100%; padding: 9px 10px; margin-bottom: 8px; border: none;
+      border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;
+      background: #8b5cf6; color: #fff;
+    }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: .45; cursor: default; }
+    button.secondary { background: #374151; }
+    #log {
+      margin-top: 4px; padding: 8px; min-height: 44px; max-height: 110px; overflow-y: auto;
+      background: #0b1220; border-radius: 6px; font-size: 11.5px; line-height: 1.5;
+      color: #9ca3af; white-space: pre-wrap; word-break: break-word;
+    }
+    .muted { color: #6b7280; font-size: 11px; margin-top: 6px; }
+    .err { color: #f87171; }
+    .ok { color: #34d399; }
+  </style>
+</head>
+<body>
+  <h1><span class="dot" id="dot"></span> ScrollWright <span id="srv" class="muted"></span></h1>
+
+  <div class="row">
+    <label>Notes folder (vault)</label>
+    <input type="text" id="vault" placeholder="C:\path\to\your\vault" spellcheck="false" />
+    <div class="muted">Type a folder and press Enter to switch. Notes go to &lt;vault&gt;\ScrollWright\</div>
+  </div>
+
+  <button id="noteThis">📝 Note this reel</button>
+  <button id="harvest" class="secondary">📥 Harvest saved folder</button>
+  <div id="log">Ready.</div>
+  <div class="muted">Start the brain: <b>python -m scrollwright serve</b></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

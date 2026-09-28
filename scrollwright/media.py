@@ -29,9 +29,14 @@ def fetch_audio(url: str, shortcode: str) -> Path | None:
     ]
     # -x (audio extraction) needs ffmpeg; without it we keep the native stream,
     # which for Instagram is already m4a — whisper handles that fine.
+    # NOTE: insert AFTER the "-f <fmt>" pair (index 5), not between -f and its value.
     if shutil.which("ffmpeg"):
-        cmd[4:4] = ["-x", "--audio-format", "m4a"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+        cmd[5:5] = ["-x", "--audio-format", "m4a"]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        print("    yt-dlp timed out after 180s")
+        return None
     if result.returncode != 0:
         print(f"    yt-dlp failed: {result.stderr.strip()[:200]}")
         return None
@@ -54,7 +59,11 @@ def fetch_video(url: str, shortcode: str) -> Path | None:
         "--no-playlist", "--no-warnings", "--quiet",
         url,
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        print("    video fetch timed out after 180s")
+        return None
     if result.returncode != 0:
         print(f"    video fetch failed: {result.stderr.strip()[:150]}")
         return None
