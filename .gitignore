@@ -8,4 +8,5 @@ venv/
 *.db
 data/
 test-vault/
+.obsidian/
 PROGRESS.md

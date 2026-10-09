@@ -243,14 +243,17 @@ def slugify(title: str, fallback: str) -> str:
 
 
 def write_note(shortcode: str, out: dict, author: str | None) -> Path:
-    """Prepend system-owned frontmatter to the AI body and write the file."""
+    """Prepend system-owned frontmatter to the AI body and write the file.
+
+    Filename = slugified title only (no date prefix). The saved date lives in
+    frontmatter only. Collisions append the shortcode.
+    """
     title = out.get("title") or f"Reel {shortcode}"
-    fname = f"{date.today().isoformat()} {slugify(title, f'reel-{shortcode}')}.md"
+    slug = slugify(title, f"reel-{shortcode}")
     notes_dir = core.VAULT_NOTES_DIR
-    path = notes_dir / fname
+    path = notes_dir / f"{slug}.md"
     if path.exists():
-        path = notes_dir / f"{date.today().isoformat()} {slugify(title, f'reel-{shortcode}')}-{shortcode}.md"
-    tags = out.get("tags") or ["unsorted"]
+        path = notes_dir / f"{slug}-{shortcode}.md"
     front = (
         "---\n"
         f'title: "{title}"\n'
@@ -258,7 +261,6 @@ def write_note(shortcode: str, out: dict, author: str | None) -> Path:
         f'author: "{author or "unknown"}"\n'
         f"saved: {date.today().isoformat()}\n"
         f"type: {out.get('type', 'other')}\n"
-        f"tags: [{', '.join(tags)}]\n"
         f"url: https://www.instagram.com/reel/{shortcode}/\n"
         "status: inbox\n"
         "---\n\n"

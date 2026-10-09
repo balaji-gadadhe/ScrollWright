@@ -122,16 +122,19 @@ out = {
 }
 p = pipeline.write_note("tst123", out, "somecreator")
 check("note file written", p.exists(), p.name)
+check("note filename has no date prefix", not p.name.startswith("202"), p.name)
 text = p.read_text(encoding="utf-8")
 check("frontmatter has author", 'author: "somecreator"' in text)
 check("frontmatter has status inbox", "status: inbox" in text)
 check("frontmatter has url", "url: https://www.instagram.com/reel/tst123/" in text)
+check("frontmatter has no tags line", "tags:" not in text, p.name)
 p2 = pipeline.write_note("tst456", out, None)
 check(
     "same-title collision gets shortcode suffix",
     p2 != p and p2.exists(),
     p2.name,
 )
+check("collision filename has no date prefix", not p2.name.startswith("202"), p2.name)
 check('missing author becomes "unknown"', 'author: "unknown"' in p2.read_text(encoding="utf-8"))
 
 # --- 5. Instagram embed metadata (network) -------------------------------------
