@@ -226,7 +226,7 @@ UI_HTML = r"""<!doctype html>
 
   <div class="card">
     <h2>Add reels</h2>
-    <textarea id="addText" rows="3" style="width:100%;resize:vertical;padding:7px 9px;border-radius:6px;border:1px solid #374151;background:#1f2937;color:#e5e7eb;font-size:12px;font-family:inherit" placeholder="Paste instagram reel/post URLs (one or many, any mess OK)&#10;e.g. https://www.instagram.com/reel/ABC123/"></textarea>
+    <textarea id="addText" rows="3" placeholder="Paste instagram reel/post URLs (one or many, any mess OK)&#10;e.g. https://www.instagram.com/reel/ABC123/"></textarea>
     <div class="row" style="margin-top:6px">
       <button id="addBtn">Add + queue</button>
       <button id="addClipboard" class="secondary small">From clipboard</button>
