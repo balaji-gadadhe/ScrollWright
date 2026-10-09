@@ -46,83 +46,160 @@ UI_HTML = r"""<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ScrollWright</title>
 <style>
-  :root { color-scheme: dark; }
+  :root { color-scheme: light; }
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 18px; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    font-size: 13px; color: #e5e7eb; background: #0b1120; line-height: 1.5;
+    font-size: 13px; color: #1f2937; background: #f3f4f6; line-height: 1.5;
+    transition: background .15s, color .15s;
+  }
+  body.dark {
+    color-scheme: dark;
+    color: #e5e7eb; background: #0b1120;
   }
   h1 { font-size: 16px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
-  h1 .dot { width: 9px; height: 9px; border-radius: 50%; background: #6b7280; display: inline-block; }
+  h1 .dot { width: 9px; height: 9px; border-radius: 50%; background: #9ca3af; display: inline-block; }
+  body.dark h1 .dot { background: #6b7280; }
   h1 .dot.on { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
-  h2 { font-size: 12px; margin: 18px 0 8px; color: #9ca3af; text-transform: uppercase; letter-spacing: .04em; }
+  h2 { font-size: 12px; margin: 18px 0 8px; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+  body.dark h2 { color: #9ca3af; }
   .card {
-    background: #111827; border: 1px solid #1f2937; border-radius: 10px;
+    background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px;
     padding: 12px 14px; margin-bottom: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  body.dark .card {
+    background: #111827; border-color: #1f2937; box-shadow: none;
   }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
-  .row label { font-size: 11px; color: #9ca3af; min-width: 78px; }
-  input[type=text], input[type=password] {
+  .row label { font-size: 11px; color: #6b7280; min-width: 78px; }
+  body.dark .row label { color: #9ca3af; }
+  input[type=text], textarea {
     flex: 1; min-width: 160px; padding: 6px 9px; border-radius: 6px;
-    border: 1px solid #374151; background: #1f2937; color: #e5e7eb; font-size: 12px;
+    border: 1px solid #d1d5db; background: #ffffff; color: #1f2937; font-size: 12px;
+    font-family: inherit;
   }
-  input[type=text]:focus { outline: none; border-color: #8b5cf6; }
+  body.dark input[type=text], body.dark textarea {
+    background: #1f2937; color: #e5e7eb; border-color: #374151;
+  }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
+  body.dark input[type=text]:focus, body.dark textarea:focus { box-shadow: 0 0 0 2px rgba(139,92,246,.35); }
+  textarea { resize: vertical; }
   button {
     padding: 6px 10px; border: none; border-radius: 6px; font-weight: 600; font-size: 12px;
-    cursor: pointer; background: #8b5cf6; color: #fff;
+    cursor: pointer; background: #6366f1; color: #fff;
+    transition: filter .1s;
   }
-  button:hover { filter: brightness(1.08); }
-  button:disabled { opacity: .4; cursor: not-allowed; }
-  button.secondary { background: #374151; }
-  button.danger { background: #b91c1c; }
+  button:hover { filter: brightness(1.06); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  body.dark button { background: #8b5cf6; }
+  button.secondary { background: #e5e7eb; color: #1f2937; }
+  body.dark button.secondary { background: #374151; color: #e5e7eb; }
+  button.danger { background: #ef4444; color: #fff; }
   button.small { padding: 3px 7px; font-size: 11px; }
   .muted { color: #6b7280; font-size: 11px; }
-  .err { color: #f87171; }
-  .ok { color: #34d399; }
+  body.dark .muted { color: #9ca3af; }
+  .err { color: #dc2626; }
+  .ok { color: #16a34a; }
+  body.dark .ok { color: #34d399; }
   .stats { display: flex; gap: 14px; flex-wrap: wrap; }
   .stat {
-    background: #1f2937; border-radius: 8px; padding: 8px 12px; min-width: 74px;
-    text-align: center;
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 8px 12px; min-width: 74px; text-align: center;
   }
-  .stat .n { font-size: 20px; font-weight: 700; display: block; }
-  .stat .l { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: .04em; }
-  .stat.pending .n { color: #facc15; }
-  .stat.done .n { color: #34d399; }
-  .stat.failed .n { color: #f87171; }
-  .stat.processing .n { color: #60a5fa; }
+  body.dark .stat { background: #1f2937; border-color: #374151; }
+  .stat .n { font-size: 20px; font-weight: 700; display: block; color: #111827; }
+  body.dark .stat .n { color: #f3f4f6; }
+  .stat .l { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+  body.dark .stat .l { color: #9ca3af; }
+  .stat.pending .n { color: #ca8a04; }
+  .stat.done .n { color: #16a34a; }
+  .stat.failed .n { color: #dc2626; }
+  .stat.processing .n { color: #2563eb; }
+  body.dark .stat.pending .n { color: #facc15; }
+  body.dark .stat.done .n { color: #34d399; }
+  body.dark .stat.failed .n { color: #f87171; }
+  body.dark .stat.processing .n { color: #60a5fa; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #1f2937; }
-  th { color: #9ca3af; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
-  tr:hover { background: #111827; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  body.dark th, body.dark td { border-bottom-color: #1f2937; }
+  th { color: #6b7280; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+  body.dark th { color: #9ca3af; }
+  tr:hover { background: #f9fafb; }
+  body.dark tr:hover { background: #111827; }
   .badge {
     display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px;
     font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
   }
-  .badge.pending { background: #fde68a; color: #713f12; }
-  .badge.processing { background: #93c5fd; color: #1e3a5f; }
-  .badge.done { background: #6ee7b7; color: #064e3b; }
-  .badge.failed { background: #fca5a5; color: #7f1d1d; }
+  .badge.pending { background: #fef3c7; color: #92400e; }
+  .badge.processing { background: #dbeafe; color: #1e40af; }
+  .badge.done { background: #d1fae5; color: #065f46; }
+  .badge.failed { background: #fee2e2; color: #991b1b; }
   .log {
-    background: #0b1220; border: 1px solid #1f2937; border-radius: 6px;
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;
     padding: 8px; min-height: 64px; max-height: 180px; overflow-y: auto;
-    font-size: 11.5px; line-height: 1.5; color: #9ca3af; white-space: pre-wrap; word-break: break-word;
+    font-size: 11.5px; line-height: 1.5; color: #4b5563; white-space: pre-wrap; word-break: break-word;
   }
-  .log .ok { color: #34d399; }
-  .log .err { color: #f87171; }
-  .log .muted { color: #6b7280; }
+  body.dark .log { background: #0b1220; border-color: #1f2937; color: #9ca3af; }
+  .log .ok { color: #16a34a; }
+  body.dark .log .ok { color: #34d399; }
+  .log .err { color: #dc2626; }
+  .log .muted { color: #9ca3af; }
+  body.dark .log .muted { color: #6b7280; }
   .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-  .gap-8 { gap: 8px; }
   #refresh { margin-left: auto; }
-  .empty { color: #6b7280; font-style: italic; padding: 10px 0; }
-  kbd {
-    background: #1f2937; border: 1px solid #374151; border-radius: 4px;
-    padding: 1px 5px; font-size: 11px; font-family: inherit; color: #d1d5db;
+  .empty { color: #9ca3af; font-style: italic; padding: 10px 0; }
+  body.dark .empty { color: #6b7280; }
+  .hint {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-left: 3px solid #6366f1;
+    border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #1e3a8a;
+    margin-bottom: 14px;
   }
+  body.dark .hint {
+    background: #1e1b4b; border-color: #312e81; border-left-color: #8b5cf6; color: #c7d2fe;
+  }
+  .hint b { color: #4338ca; }
+  body.dark .hint b { color: #a5b4fc; }
+  .hint .title { font-weight: 700; text-transform: uppercase; font-size: 10.5px; letter-spacing: .04em; color: #4338ca; display: block; margin-bottom: 4px; }
+  body.dark .hint .title { color: #a5b4fc; }
+  .theme-toggle {
+    position: fixed; top: 18px; right: 18px; z-index: 10;
+    border: 1px solid #d1d5db; background: #fff; color: #1f2937;
+    border-radius: 20px; padding: 4px 10px; font-size: 11.5px; font-weight: 600;
+    cursor: pointer;
+  }
+  body.dark .theme-toggle { border-color: #374151; background: #1f2937; color: #e5e7eb; }
+  .theme-toggle:hover { filter: brightness(1.05); }
+  kbd {
+    background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px;
+    padding: 1px 5px; font-size: 11px; font-family: inherit; color: #374151;
+  }
+  body.dark kbd { background: #1f2937; border-color: #374151; color: #d1d5db; }
 </style>
 </head>
 <body>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light / dark">🌓 Theme</button>
   <h1><span class="dot" id="dot"></span> ScrollWright <span class="muted" id="srv"></span></h1>
-  <div class="card">
+
+  <div class="hint" id="hint">
+    <span class="title">How to use this</span>
+    Paste Instagram reel links in the <b>Add reels</b> box and click <b>Add + queue</b>
+    (or hit the <b>From clipboard</b> button). The server transcribes the audio,
+    asks Gemini to write a note, and saves it to your Obsidian vault —
+    <b><span id="hintVaultTarget"></span></b>.
+    <br/><br/>
+    While it works you'll see the <b>Processing</b> count go up and the row status
+    change to <span class="badge processing" style="display:inline;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600">processing</span>
+    → <span class="badge done" style="display:inline;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600">done</span>.
+    Failed reels show <span class="badge failed" style="display:inline;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600">failed</span> — hit <b>Requeue failed</b> to try again.
+    <br/><br/>
+    <b>One thing at a time:</b> the server processes one reel at a time in the
+    background. Add as many as you want — they queue up and get handled in order.
+    Close this hint and it stays dismissed. Toggle <b>Theme</b> in the top-right
+    if you prefer dark.
+  </div>
+
+  <div class="card" id="vaultCard">
     <div class="row">
       <label for="vault">Notes folder</label>
       <input type="text" id="vault" placeholder="C:\\path\\to\\vault" spellcheck="false" />
@@ -181,6 +258,61 @@ UI_HTML = r"""<!doctype html>
   var $ = function (id) { return document.getElementById(id); };
   var logEl = $("log");
   var POLL_MS = 2500;
+
+  // ---- theme toggle (light by default; dark is the old look) ----
+  (function () {
+    var t = $("themeToggle");
+    if (!t) return;
+    t.addEventListener("click", function () {
+      document.body.classList.toggle("dark");
+      t.textContent = document.body.classList.contains("dark") ? "☀️ Light" : "🌓 Theme";
+    });
+  })();
+
+  // ---- hint: fill the vault target line + dismiss ----
+  (function () {
+    var hint = $("hint");
+    if (!hint) return;
+    var vaultTarget = $("hintVaultTarget");
+    function fillVaultTarget(path) {
+      if (vaultTarget) {
+        var short = path ? path.split("/").pop() : "your vault";
+        vaultTarget.textContent = "<b>" + short + "</b>";
+      }
+    }
+    fillVaultTarget(localStorage.getItem("sw_vault") || "");
+    // update from /status whenever it refreshes
+    var origFill = fillVaultTarget;
+    fillVaultTarget = function (path) {
+      origFill(path);
+      if (path) try { localStorage.setItem("sw_vault", path); } catch (e) {}
+    };
+    // re-run on each status tick so the hint stays in sync
+    var _tick = window.tick;
+    if (_tick) {
+      window.tick = function () {
+        _tick.call(this);
+        // pull vault from last status if available
+        var s = window.__lastStatus;
+        if (s && s.vault) fillVaultTarget(s.vault);
+      };
+    }
+    // dismiss
+    var dismiss = hint.querySelector('.title');
+    if (dismiss) {
+      dismiss.style.cursor = "pointer";
+      dismiss.title = "Dismiss hint";
+      dismiss.addEventListener("click", function () {
+        hint.style.display = "none";
+        try { localStorage.setItem("sw_hintDismissed", "1"); } catch (e) {}
+      });
+    }
+    // auto-dismiss if previously dismissed
+    try {
+      if (localStorage.getItem("sw_hintDismissed") === "1") hint.style.display = "none";
+    } catch (e) {}
+  })();
+
 
   function log(msg, cls) {
     var line = document.createElement("div");
@@ -331,16 +463,25 @@ UI_HTML = r"""<!doctype html>
     api("/status").then(function (r) {
       return r.json();
     }).then(function (s) {
+      window.__lastStatus = s;
       var on = s && s.running;
       $("dot").classList.toggle("on", !!on);
       $("srv").textContent = on ? "· running" : "· server offline";
       $("srv").className = "muted" + (on ? " ok" : " err");
       if (on && s.stats) fillStats(s.stats);
       if (on && s.busy) log("working on " + (s.current || "?") + "…", "muted");
+      // keep the hint's vault target in sync
+      var vt = $("hintVaultTarget");
+      if (vt && s && s.vault) {
+        var short = s.vault.split("/").pop();
+        vt.innerHTML = "<b>" + short + "</b>";
+        try { localStorage.setItem("sw_vault", s.vault); } catch (e) {}
+      }
     }).catch(function () {
       $("dot").classList.remove("on");
       $("srv").textContent = "· server offline";
       $("srv").className = "muted err";
+      window.__lastStatus = null;
     });
   }
 
