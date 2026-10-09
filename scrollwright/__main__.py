@@ -10,6 +10,9 @@ Usage:
     python -m scrollwright reprocess [filter]  # redo reels with current pipeline
     python -m scrollwright stats
     python -m scrollwright serve               # localhost bridge for the extension
+    python -m scrollwright serve --ui          # bridge + open the web UI in a browser
+    python -m scrollwright ui                  # start the server if needed, open the UI,
+                                                # and keep watching it (restarts if it dies)
 """
 
 import sys
@@ -68,7 +71,7 @@ def cmd_stats(args: list[str]) -> None:
 def cmd_serve(args: list[str]) -> None:
     from scrollwright import server
 
-    server.main()
+    server.main(open_ui="--ui" in args)
 
 
 def cmd_retry(args: list[str]) -> None:
@@ -96,7 +99,133 @@ def cmd_reprocess(args: list[str]) -> None:
     print(f"Requeued {n} reel(s) for reprocessing. Run:  python -m scrollwright process")
 
 
-COMMANDS = {"add": cmd_add, "process": cmd_process, "stats": cmd_stats, "retry": cmd_retry, "reprocess": cmd_reprocess, "serve": cmd_serve}
+def cmd_ui(args: list[str]) -> None:
+    """Start the server if it isn't running, open the web UI in a browser, and keep
+    watching it -- if the server dies, restart it and re-open the browser.
+
+    One-command entry point for the local GUI: one terminal, one command, the UI
+    stays up. Pass --no-open to skip the browser popup.
+    """
+    import os
+    import select
+    import subprocess
+    import sys
+    import threading
+    import time
+
+    from . import core
+
+    PORT = int(os.environ.get("SCROLLWRIGHT_PORT", "8765"))
+    HOST = "127.0.0.1"
+    URL = f"http://{HOST}:{PORT}"
+    open_browser = "--no-open" not in args
+
+    def _port_open() -> bool:
+        import socket
+        try:
+            s = socket.create_connection((HOST, PORT), timeout=1.0)
+            s.close()
+            return True
+        except OSError:
+            return False
+
+    def _open_browser():
+        import webbrowser
+        for _ in range(30):  # up to ~3s
+            if _port_open():
+                webbrowser.open(URL, new=0, autoraise=True)
+                return
+            time.sleep(0.1)
+        print(f"[ui] server didn't come up in time -- open {URL} manually", flush=True)
+
+    server_proc_holder = [None]  # mutable so the watchdog + main both mutate the same object
+
+    def _watchdog():
+        while True:
+            sp = server_proc_holder[0]
+            if sp is not None and sp.poll() is not None:
+                print("[ui] server exited unexpectedly -- restarting...", flush=True)
+                server_proc_holder[0] = subprocess.Popen(
+                    [sys.executable, "-m", "scrollwright", "serve"],
+                    cwd=repo_root,
+                    env=child_env,
+                )
+                _open_browser()
+            time.sleep(3)
+
+    # If a server is already running on the port, just open the UI and stay alive
+    # (so the user has a terminal to watch logs in).
+    if _port_open():
+        print(f"[ui] server already running on {URL}", flush=True)
+        if open_browser:
+            import webbrowser
+            webbrowser.open(URL, new=0, autoraise=True)
+        print("[ui] press Ctrl+C to leave this terminal open", flush=True)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\n[ui] left running (server stays up)")
+        return
+
+    # Start the server as a child process so we can watch it.
+    # The child must run from the repo root (parent of the scrollwright/ package)
+    # so that `python -m scrollwright serve` can import the package.
+    repo_root = str(core.PROJECT_ROOT.parent)
+    child_env = os.environ.copy()
+    child_env.setdefault("PYTHONPATH", repo_root)
+    print(f"[ui] starting server on {URL}...", flush=True)
+    server_proc_holder[0] = subprocess.Popen(
+        [sys.executable, "-m", "scrollwright", "serve"],
+        cwd=repo_root,
+        env=child_env,
+    )
+
+    threading.Thread(target=_open_browser, daemon=True).start()
+    threading.Thread(target=_watchdog, daemon=True).start()
+
+    print("[ui] press Ctrl+C to stop", flush=True)
+    try:
+        try:
+            poll = select.poll()
+            poll.register(server_proc_holder[0].stdout, select.POLLIN)
+            poll.register(server_proc_holder[0].stderr, select.POLLIN)
+        except Exception:
+            poll = None
+
+        while server_proc_holder[0].poll() is None:
+            if poll is not None:
+                while True:
+                    events = poll.poll(200)
+                    if not events:
+                        break
+                    for fd, _ in events:
+                        line = fd.readline()
+                        if line:
+                            sp = server_proc_holder[0]
+                            stream = sys.stdout if fd is sp.stdout else sys.stderr
+                            stream.write(line)
+                            if stream is sys.stdout and hasattr(stream, "flush"):
+                                stream.flush()
+            else:
+                time.sleep(0.2)
+    except KeyboardInterrupt:
+        print("\n[ui] stopping server...", flush=True)
+    finally:
+        sp = server_proc_holder[0]
+        if sp is not None:
+            try:
+                sp.terminate()
+                sp.wait(timeout=5)
+            except Exception:
+                try:
+                    sp.kill()
+                except Exception:
+                    pass
+        print("[ui] stopped")
+
+
+COMMANDS = {"add": cmd_add, "process": cmd_process, "stats": cmd_stats, "retry": cmd_retry, "reprocess": cmd_reprocess, "serve": cmd_serve, "ui": cmd_ui}
 
 
 def main() -> None:

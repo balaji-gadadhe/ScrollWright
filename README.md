@@ -96,7 +96,9 @@ python -m scrollwright process --limit 5    # just 5
 python -m scrollwright retry                # requeue failed reels
 python -m scrollwright reprocess [filter]   # re-run notes with the latest pipeline
 python -m scrollwright stats                # ledger status
-python -m scrollwright serve                # localhost bridge for the extension
+python -m scrollwright serve                # localhost bridge for the extension + Chrome popup
+python -m scrollwright serve --ui           # same, and open the web UI in a browser
+python -m scrollwright ui                   # start server if needed + open web UI + keep it alive
 ```
 
 ### Live mode: one click → one note
@@ -118,6 +120,24 @@ python -m scrollwright serve        # leave it running while you browse
 - Server offline? The extension falls back to the txt download automatically.
 
 The server binds `127.0.0.1` only and speaks to nothing but your browser.
+
+### Web UI: view + manage everything in a browser
+
+`python -m scrollwright ui` starts the server (if it isn't already running), opens
+`http://127.0.0.1:8765` in your browser, and keeps watching it — if the server
+crashes it restarts automatically. One command, one terminal, the UI stays up.
+
+The UI lets you:
+- See ledger stats (pending / processing / done / failed) at a glance
+- Scroll through every reel in the ledger with status, note path, date added
+- Add reels by pasting URLs or clicking "From clipboard"
+- Kick off processing of pending reels immediately
+- Retry failed reels, reprocess done reels (all or filtered by shortcode/URL)
+- Change the vault path (updates `.env` live, validated against the filesystem)
+- Open your vault folder in Explorer/Finder with one click
+- Link directly to any note file from the table
+
+The UI is also available when you run `python -m scrollwright serve --ui`.
 
 ### Bulk import: your ENTIRE saved folder
 
@@ -173,6 +193,8 @@ that entire backlog under a dollar.
 
 - [ ] YouTube support (yt-dlp already speaks it — widen the URL regex)
 - [x] Extension auto-send to a local server (skip the txt file) — shipped: `python -m scrollwright serve` + popup
+- [x] Local web UI to view/manage the ledger — shipped: `python -m scrollwright ui`
+- [x] Auto-start + watchdog for the server — shipped: `python -m scrollwright ui` restarts if it dies
 - [ ] RAG chat over your notes ("what was that color-palette tool?")
 - [ ] Repost detector via perceptual frame hashing
 - [ ] Weekly auto-MOC note linking the week's reels
