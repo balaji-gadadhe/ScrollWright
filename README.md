@@ -75,7 +75,7 @@ docker run -d -p 3000:3000 ghcr.io/selfhosted/analytics:latest
 …the reel's caption, verbatim, untouched by Gemini…
 ### Transcript
 …the full spoken transcript, verbatim…
-
+````
 ## Setup
 
 ```bash
