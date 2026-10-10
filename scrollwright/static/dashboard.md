@@ -9,6 +9,9 @@
 - The Chrome extension popup can start the local server: click **▶ Start
   ScrollWright**, then paste the copied command into a terminal and press
   Enter. See `README.md` for turn-on/off details.
+- Reload the extension with the reload button (or the ↻ Reload from the
+  `edge://extensions` menu) after pulling new code — the popup copies the current
+  command and the new **Content** toggle only show up after reload.
 
 ## Inbox (status = inbox)
 

@@ -67,7 +67,14 @@ docker run -d -p 3000:3000 ghcr.io/selfhosted/analytics:latest
 1. Point a subdomain at your VPS
 2. Run the container with a Postgres URL
 3. Add your site, paste the tracking snippet
-````
+
+**Tags:** #self-hosted #docker #analytics #privacy
+
+## Raw source
+### Caption
+…the reel's caption, verbatim, untouched by Gemini…
+### Transcript
+…the full spoken transcript, verbatim…
 
 ## Setup
 
@@ -75,15 +82,14 @@ docker run -d -p 3000:3000 ghcr.io/selfhosted/analytics:latest
 # 1. Python 3.10+
 pip install -r requirements.txt
 
-# 2. Configure: copy .env.example → .env and fill in:
-#    VAULT_PATH     your Obsidian vault (notes go to <vault>/ScrollWright/)
-#    GEMINI_API_KEY free from https://aistudio.google.com/apikey
+# 2. Copy .env.example → .env and fill in:
+#    VAULT_PATH      your Obsidian vault (notes go to <vault>/ScrollWright/)
+#    GEMINI_API_KEY  free from https://aistudio.google.com/apikey (no card)
 
-# 3. First run downloads the whisper model (~460MB, one-time)
+# 3. First run downloads the whisper model (~460 MB, one-time, offline)
 ```
 
-No ffmpeg needed (optional; install it if you want audio re-encoding).
-No database server, no Docker, no VPS — one folder, runs anywhere.
+No ffmpeg needed (optional). No database server, no Docker, no VPS — one folder, runs anywhere.
 
 ## Usage
 
@@ -96,9 +102,9 @@ python -m scrollwright process --limit 5    # just 5
 python -m scrollwright retry                # requeue failed reels
 python -m scrollwright reprocess [filter]   # re-run notes with the latest pipeline
 python -m scrollwright stats                # ledger status
-python -m scrollwright serve                # localhost bridge for the extension + Chrome popup
-python -m scrollwright serve --ui           # same, and open the web UI in a browser
-python -m scrollwright ui                   # start server if needed + open web UI + keep it alive
+python -m scrollwright serve                # localhost bridge for the extension + API
+python -m scrollwright serve --ui           # same, and open the web UI
+python -m scrollwright ui                   # start if needed + open web UI + keep it alive
 ```
 
 ### Live mode: one click → one note
@@ -155,23 +161,59 @@ You have two ways to set these for your own machine:
 After changing either, click **▶ Start ScrollWright** and the copied command will
 use your values.
 
-### Web UI: view + manage everything in a browser
+### Web UI: 3-panel inbox to manage your reels
 
 `python -m scrollwright ui` starts the server (if it isn't already running), opens
-`http://127.0.0.1:8765` in your browser, and keeps watching it — if the server
+`http://127.0.0.1:8765/` in your browser, and keeps watching it — if the server
 crashes it restarts automatically. One command, one terminal, the UI stays up.
 
-The UI lets you:
-- See ledger stats (pending / processing / done / failed) at a glance
-- Scroll through every reel in the ledger with status, note path, date added
-- Add reels by pasting URLs or clicking "From clipboard"
-- Kick off processing of pending reels immediately
-- Retry failed reels, reprocess done reels (all or filtered by shortcode/URL)
-- Change the vault path (updates `.env` live, validated against the filesystem)
-- Open your vault folder in Explorer/Finder with one click
-- Link directly to any note file from the table
+The UI is a **3-panel app**: a control panel on the left, the reel list in the
+middle, and a live activity log on the right.
 
-The UI is also available when you run `python -m scrollwright serve --ui`.
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ 🎬 ScrollWright ● online   Saved reels → searchable notes      │
+├──────────────┬──────────────────────────────┬───────────────────┤
+│ ADD REELS    │   LEDGER                     │ ACTIVITY (live)   │
+│ [textarea]   │   [0][0][41][0] stats tiles  │ auto-refresh ●    │
+│ [+ Add+queue]│   filter + filter/clear btns │ Pause   ↻         │
+│ [paste from  │   replay | status | added |  │ ┌───────────────┐ │
+│  clipboard]  │   note (click opens .md) |   │ │ queued 3 new  │ │
+│              │   actions (retry/reprocess)  │ │ working on … │ │
+│ QUEUE        │   ┌─────────────────────────┐ │ │ idle          │ │
+│ [Process now]│   │ reel  shortcode         │ │ └───────────────┘ │
+│ [Requeue fail│   │        status badge      │ │ │               │ │
+│  ed]         │   │        when added        │ │                 │ │
+│ [Reprocess…] │   │        note file name    |   │                 │ │
+│              │   └─────────────────────────┘ │                 │ │
+│ NOTES FOLDER │                                  │                 │ │
+│ [vault path] │                                  │                 │ │
+└──────────────┴───────────────────────────────────────────────────┘
+```
+
+What the three panels do:
+- **Top header**: server status dot (online/offline), your vault path pill
+  with an **Open** button that launches Explorer, and a **🌙 Dark / ☀️ Light**
+  theme toggle.
+- **Left — Controls**: paste reel URLs, add them as a batch, pull them from
+  your clipboard, kick off processing, requeue failed reels, reprocess gone-
+  stale notes (all or filtered), and change the vault path (Enter saves).
+- **Middle — Ledger**: the stats tiles at a glance, a text filter for the
+  shortcode/URL, and a scrollable table of every reel — status badge, when it
+  was added, a click-to-open note link, and retry/reprocess buttons.
+- **Right — Activity log**: a live tail of what the server is doing — adding
+  batches, picking up work, finishing reels. It pauses/resumes and deduplicates
+  log noise so it stays readable while a reel is processing.
+
+**Two things to know:**
+- The log only prints when something *changes* — when the server starts working
+  on a reel and when the queue drains to idle — so it doesn't spam "working on…"
+  every poll tick.
+- **Reprocess filtered** uses the filter you typed in the middle panel. If the
+  filter is empty it asks you to fill it in first.
+
+`python -m scrollwright serve --ui` does the same thing (start server + open
+the UI) if you prefer starting with that command.
 
 ### Bulk import: your ENTIRE saved folder
 
