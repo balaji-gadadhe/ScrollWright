@@ -13,7 +13,8 @@ Endpoints (127.0.0.1 only):
     GET  /api/ledgers → {"ledgers": [...], "stats": {...}}
     POST /api/retry   → {"requeued": n}
     POST /api/reprocess → {"requeued": n}  (body: {"filter": "..."} optional)
-    POST /api/process → {"claimed": n}    (kick the worker now)
+    POST /api/process → {"claimed": true}  (wake the worker now)
+    GET  /projectRoot → {"path": "..."}   (project folder, where the .bat files are)
 
 No dependencies beyond the stdlib. Binds localhost only.
 """
@@ -752,6 +753,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, {"running": True, "vault": str(core.VAULT_NOTES_DIR), "busy": _state["busy"], "current": _state["current"], "stats": core.stats()})
         elif route == "/vault":
             self._send(200, {"path": str(core.VAULT_NOTES_DIR)})
+        elif route == "/projectRoot":
+            self._send(200, {"path": str(core.PROJECT_ROOT.parent)})
         elif route == "/api/ledgers":
             self._send_ledgers()
         else:
@@ -772,11 +775,15 @@ class Handler(BaseHTTPRequestHandler):
 
         if route == "/add":
             text = str(data.get("text", ""))
+            # Optional per-reel video toggle from the extension:
+            # {"text": ..., "watch": true|false} — absent = env default.
+            watch = data.get("watch")
+            watch = None if watch is None else bool(watch)
             urls = core.extract_reel_urls(text)
             if not urls:
                 self._send(400, {"error": "no instagram reel/post URLs found"})
                 return
-            new, dup = core.add_urls(urls)
+            new, dup = core.add_urls(urls, watch=watch)
             if new:
                 _wake.set()
             self._send(200, {"added": new, "duplicates": dup, "stats": core.stats()})

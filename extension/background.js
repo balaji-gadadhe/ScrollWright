@@ -19,10 +19,11 @@ async function serverFetch(path, opts = {}) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     if (msg.type === "addToLedger") {
+      // watch: true|false per-reel video toggle (undefined = server env default)
       sendResponse(await serverFetch("/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: msg.text }),
+        body: JSON.stringify({ text: msg.text, watch: msg.watch }),
       }));
     } else if (msg.type === "getStatus") {
       sendResponse(await serverFetch("/status"));
@@ -34,12 +35,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: msg.path }),
       }));
+    } else if (msg.type === "getProjectRoot") {
+      sendResponse(await serverFetch("/projectRoot"));
     } else if (msg.type === "downloadTxt") {
       const url = URL.createObjectURL(new Blob([msg.text], { type: "text/plain" }));
       const dl = chrome.downloads
         ? await chrome.downloads.download({ url, filename: "saved-reels.txt", saveAs: false })
         : null;
       sendResponse({ ok: true, downloadId: dl });
+    } else if (msg.type === "setFloatMode") {
+      // persist so the content script (and any newly opened insta tab) picks it up
+      chrome.storage.local.set({ sw_mode: msg.mode });
+      sendResponse({ ok: true });
+      // forward to any open instagram tab so the floating button updates live
+      const tabs = await chrome.tabs.query({ url: "https://www.instagram.com/*" });
+      for (const tab of tabs) {
+        chrome.tabs.sendMessage(tab.id, { type: "setFloatMode", mode: msg.mode }).catch(() => {});
+      }
     }
   })();
   return true; // async sendResponse

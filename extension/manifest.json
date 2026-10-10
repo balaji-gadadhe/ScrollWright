@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "ScrollWright Exporter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "One click turns a reel into an Obsidian note. Harvest saved folders. Local-only, nothing leaves your machine except to Gemini.",
-  "permissions": ["activeTab", "scripting", "downloads"],
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
   "host_permissions": ["https://www.instagram.com/*"],
   "background": {
     "service_worker": "background.js"

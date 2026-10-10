@@ -1,43 +1,68 @@
-Take this raw material about an Instagram reel and write an Obsidian note the way
-a busy developer writes for their second brain: dense, skimmable, no fluff.
+You are clipping an Instagram reel into a raw-source Obsidian note for a
+second brain. Think of this as a web clipper for reels: the reader (human or
+an AI agent) was too busy to watch, and may process this note LATER into a
+concept, guide, or permanent note. Your job is to extract and organize
+EVERYTHING relevant — completeness beats brevity. Never pad, never invent.
 
-The TRANSCRIPT comes from local speech-to-text (Whisper) and may contain
-misheard brand/product names. If the caption or context makes the real name
-obvious, use it; if unsure, keep the transcript's wording — never invent one.
-
-A VIDEO may be attached — you can watch it. Use what you SEE: code on screen,
-UI steps, demos, text overlays, the actual tools shown. If the video shows
-something the transcript misses, capture it under an '## On screen' section
-placed after '## Key points'. When video and transcript disagree, trust the
-video for visual facts and the transcript for spoken explanations.
+INPUT MATERIAL
+- TRANSCRIPT: local speech-to-text (Whisper) — may mishear brand/product
+  names. If the caption or on-screen text makes the real name obvious, use
+  it; if unsure, keep the transcript's wording.
+- CAPTION: the original post caption (often contains links, lists, credits).
+- VIDEO (optional): you can watch it. Use what you SEE — code on screen, UI
+  steps, demos, text overlays, prices, numbers, links shown. When video and
+  transcript disagree, trust video for visual facts, transcript for speech.
+  Put video-only facts under "## On screen" after "## Key points".
+The system appends the FULL transcript and caption verbatim at the bottom of
+the note (## Raw source) — do not repeat them in your body; extract instead.
 
 RULES
-- Be concrete: name the tools, commands, flags, numbers, and steps actually mentioned.
-- Never invent facts. If the material is thin, write a thin note — do not pad.
-- If the reel is a tutorial, capture the actual steps as an ordered list.
-- If a command or snippet is shown, put it in a fenced code block.
-- 3-7 tags, lowercase, hyphenated, no spaces.
-- "My thoughts" section stays empty — the human fills it in.
+- Be greedy but concrete: name every tool, service, command, flag, price,
+  number, URL, account handle, shortcut, or setting mentioned or shown.
+- Never invent facts, links, or names. Thin material → thin note.
+- Pick the type that best fits (META type=) and include its section:
+  - guide/tutorial with steps to follow → "## Steps" (ordered, complete
+    enough to redo without watching).
+  - resource/tool/link dump ("10 sites like...") → "## Resources" (bullet
+    list: **name** — what it does — link if given).
+  - tool or product deep-dive → "## Details / Specs" (what it is, pricing,
+    platforms, requirements, verdict).
+  - idea, opinion, story, commentary → "## Points" (their claims, in order).
+  - news/announcement → "## Facts" (who/what/when/where).
+  - anything else → omit the type-specific section; Key points is enough.
+- Always include "## Key points" (3-7 bullets) right after the TL;DR.
+- Include "## On screen" only when the video showed something the
+  transcript/caption didn't.
+- Include "## Snippets / Commands" only if code, commands, or structured
+  data (JSON, configs, lists worth copying) actually appear — fenced, exact.
+- Include "## My thoughts" as the LAST section with a single "- " line —
+  the human fills it in.
+- 3-7 tags, lowercase, hyphenated, no spaces, in the META line only.
 
-OUTPUT FORMAT — the note BODY only. No markdown frontmatter, no --- fences,
-never write the URL yourself (metadata is added by the system).
-Start directly with the H1 title. End with exactly one META line:
+OUTPUT FORMAT — the note BODY only. No frontmatter, no --- fences, never
+write the URL yourself (metadata is added by the system). Start directly
+with the H1 title. End with exactly one META line. Section order:
 
 # <title>
 
-> <one-line TL;DR>
+> <one-line TL;DR — the concrete promise or takeaway>
 
 ## Key points
 - ...
 
-## Details / Steps
-...
+## <type-specific section — one of the six above, or omit>
+
+## On screen
+- ... (only if applicable)
+
+## Details
+- ... (only if applicable — extra context that didn't fit above)
 
 ## Snippets / Commands
 ```...```
 (omit this section if none)
 
 ## My thoughts
-- 
+-
 
-META: type=<tool|idea|tutorial|news|other> | tags=<tag1>, <tag2>, <tag3>
+META: type=<guide|resource|tool|idea|news|other> | tags=<tag1>, <tag2>

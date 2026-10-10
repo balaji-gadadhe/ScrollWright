@@ -6,6 +6,9 @@
 - New reels land here with `status:: inbox` — skim, add thoughts, then flip to
   `status:: done` (or delete the note).
 - Same reel saved multiple times collapses into one note automatically.
+- The Chrome extension popup can start the local server: click **▶ Start
+  ScrollWright**, then paste the copied command into a terminal and press
+  Enter. See `README.md` for turn-on/off details.
 
 ## Inbox (status = inbox)
 

@@ -1,9 +1,9 @@
 /**
- * ScrollWright Exporter — content script.
- * Adds a floating button on instagram.com. On a saved folder it auto-scrolls,
- * collects every reel/post URL, and POSTs them to the local ScrollWright
- * server (python -m scrollwright serve) which dedupes + writes notes.
- * Falls back to a txt download if the server isn't running.
+ * ScrollWright — content script.
+ * Adds a floating button on instagram.com. Its text/behavior follows the mode
+ * set in the popup (chrome.storage.local.sw_mode):
+ *   "note"   → 📝 Note this reel  (single reel on the current page)
+ *   "scroll" → 📥 Scroll / harvest (auto-scroll saved folder)
  */
 (function () {
   "use strict";
@@ -21,17 +21,28 @@
     }
   }
 
-  // Routed through the background service worker — a public https page
-  // fetching http://127.0.0.1 directly can trip Private Network Access rules.
-  function postToServer(text) {
+  function postToServer(text, watch) {
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: "addToLedger", text }, (res) => {
+        chrome.runtime.sendMessage({ type: "addToLedger", text, watch }, (res) => {
           void chrome.runtime.lastError;
           resolve(res || null);
         });
       } catch {
         resolve(null);
+      }
+    });
+  }
+
+  // Read the popup's "Note content" toggle (default: video ON).
+  function getWatch() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get("sw_watch", ({ sw_watch }) => {
+          resolve(sw_watch !== false);
+        });
+      } catch {
+        resolve(true);
       }
     });
   }
@@ -44,9 +55,38 @@
     a.click();
   }
 
+  async function noteThisReel(btn) {
+    // ONLY the current page's reel — never scrape every reel link on the
+    // page. Instagram renders ~20 recommendation links per page; scraping
+    // them all queued 21 reels from a single click.
+    const found = new Set();
+    if (REEL_RE.test(location.href)) found.add(location.href);
+    try {
+      const og = document.querySelector('meta[property="og:url"]');
+      if (og && REEL_RE.test(og.content)) found.add(og.content);
+    } catch (_) {}
+
+    const urls = [...new Set([...found].map((u) => (u.endsWith("/") ? u : u + "/")))];
+    if (urls.length === 0) {
+      btn.textContent = "❌ no reel on this page";
+      setTimeout(() => syncButtonText(btn), 3000);
+      return;
+    }
+    btn.textContent = `📝 noting ${urls.length}…`;
+    const res = await postToServer(urls.join("\n"), await getWatch());
+    if (res && res.ok) {
+      btn.textContent = res.data.added > 0
+        ? `✅ ${res.data.added} queued → note in ~1 min`
+        : `already in ledger (${res.data.duplicates} dups)`;
+    } else {
+      btn.textContent = "⚠ server off";
+    }
+    setTimeout(() => syncButtonText(btn), 5000);
+  }
+
   async function harvest(btn) {
     if (!/\/saved\//.test(location.pathname)) {
-      alert("ScrollWright: open your saved folder first, e.g.\ninstagram.com/<your-name>/saved/all-posts/\n\n(For a single reel, use the extension popup → Note this reel.)");
+      alert("ScrollWright: open your saved folder first,\ninstagram.com/<your-name>/saved/all-posts/\n\n(For a single reel, switch the popup to 📝 Note this reel.)");
       return;
     }
     const found = new Set();
@@ -72,33 +112,59 @@
 
     if (found.size === 0) {
       btn.textContent = "❌ none found — scroll a bit then retry";
-      setTimeout(() => (btn.textContent = "📥 Export saved reels"), 3500);
+      setTimeout(() => syncButtonText(btn), 3500);
       return;
     }
 
     btn.textContent = `🛰 sending ${found.size}…`;
-    const res = await postToServer([...found].sort().join("\n"));
+    const res = await postToServer([...found].sort().join("\n"), await getWatch());
     if (res && res.ok) {
       btn.textContent = `✅ ${res.data.added} new, ${res.data.duplicates} dups → notes incoming`;
     } else {
       downloadTxt([...found].sort().join("\n") + "\n");
       btn.textContent = "⚠ server off — saved-reels.txt downloaded";
     }
-    setTimeout(() => (btn.textContent = "📥 Export saved reels"), 6000);
+    setTimeout(() => syncButtonText(btn), 6000);
+  }
+
+  function syncButtonText(btn) {
+    chrome.storage.local.get("sw_mode", ({ sw_mode }) => {
+      const mode = sw_mode || "note";
+      if (mode === "scroll") {
+        btn.textContent = "📥 Scroll / harvest";
+        btn.onclick = () => harvest(btn);
+      } else {
+        btn.textContent = "📝 Note this reel";
+        btn.onclick = () => noteThisReel(btn);
+      }
+    });
   }
 
   function makeButton() {
     const btn = document.createElement("button");
     btn.id = "scrollwright-export-btn";
-    btn.textContent = "📥 Export saved reels";
     Object.assign(btn.style, {
       position: "fixed", right: "20px", bottom: "20px", zIndex: "99999",
       padding: "12px 18px", borderRadius: "24px", border: "none",
-      background: "#8b5cf6", color: "#fff", fontWeight: "600",
+      background: "#6366f1", color: "#fff", fontWeight: "600",
       fontFamily: "system-ui, sans-serif", fontSize: "14px",
       cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,.35)",
     });
-    btn.addEventListener("click", () => harvest(btn));
+    chrome.storage.local.get("sw_mode", ({ sw_mode }) => {
+      const mode = sw_mode || "note";
+      if (mode === "scroll") {
+        btn.textContent = "📥 Scroll / harvest";
+        btn.onclick = () => harvest(btn);
+      } else {
+        btn.textContent = "📝 Note this reel";
+        btn.onclick = () => noteThisReel(btn);
+      }
+    });
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg.type === "setFloatMode") {
+        syncButtonText(btn);
+      }
+    });
     document.body.appendChild(btn);
     return btn;
   }
@@ -107,8 +173,6 @@
     makeButton();
   }
 
-  // SPA navigation: Instagram swaps pages without reloading, so re-check
-  // for our button on every URL change.
   let lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== lastUrl) {

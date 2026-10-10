@@ -10,3 +10,21 @@ data/
 test-vault/
 .obsidian/
 PROGRESS.md
+
+# Local caches
+.freebuff/
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+# Machine-local launchers — not published with the repo (README documents the
+# copy-to-clipboard PowerShell command instead)
+*.bat
+
+# One-off vault migration scripts (they hardcode local machine paths)
+rename_notes.py
+update_notes_format.py
+
+# Ad-hoc local smoke tests (smoke_test.py is the tracked test suite)
+smoke_projectRoot.js
+test_projectRoot.ps1

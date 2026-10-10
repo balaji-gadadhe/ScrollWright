@@ -117,9 +117,43 @@ python -m scrollwright serve        # leave it running while you browse
   everything new. The ledger dedupes, so re-harvests only add what's new.
 - Popup → **Notes folder**: point the pipeline at any vault folder on the fly
   (updates `.env`).
+- **Turn on / off ScrollWright:** the popup's **▶ Start ScrollWright** button
+  shows the command you need to run (a small code block with a **Copy** button
+  next to it). Click **Copy**, paste into a terminal, hit Enter. That's
+  `cd <project>; & <python> -m scrollwright ui` — **PowerShell syntax** (`;`
+  chains, `&` runs the exe), which is Windows' default terminal. The extension
+  can't run commands directly, so this is the handoff.
+  
+  There's also a **⚙ Configure paths** button in the popup for anyone who isn't
+  on the machine this was built on: set your project folder and python binary
+  path there (saved in your browser's local storage), and the command updates
+  with your values.
 - Server offline? The extension falls back to the txt download automatically.
 
 The server binds `127.0.0.1` only and speaks to nothing but your browser.
+
+### Porting the extension to another machine
+
+The popup ships with placeholder defaults you'll need to change:
+
+- `DEFAULT_PROJECT_ROOT` (`extension/popup.js`) — the folder containing the
+  ScrollWright project, used as a last-resort fallback.
+- `PYTHON_BIN` (`extension/popup.js`) — the python binary that runs
+  `python -m scrollwright ui` (set it to your `python.exe` full path if
+  `python` isn't on your PATH — that avoids the Windows Store alias issue).
+
+You have two ways to set these for your own machine:
+
+1. **Easier:** click **⚙ Configure paths** in the popup. Set your project folder
+   and python path, click Save. The values are stored in your browser's
+   `chrome.storage.local`, so they persist across popup opens and don't touch the
+   extension files.
+2. **Direct:** edit `DEFAULT_PROJECT_ROOT` and `PYTHON_BIN` at the top of
+   `extension/popup.js` — or set `PYTHON_BIN = "python"` if `python` is on your
+   PATH and you don't need the full path.
+
+After changing either, click **▶ Start ScrollWright** and the copied command will
+use your values.
 
 ### Web UI: view + manage everything in a browser
 
@@ -151,9 +185,31 @@ Bundled Chrome extension (unpacked, no store):
 3. Open `instagram.com/<your-username>/saved/all-posts/`
 4. Click the purple **📥 Export saved reels** button — it auto-scrolls and
    downloads `saved-reels.txt`
-5. `python -m scrollwright add saved-reels.txt && python -m scrollwright process`
+5. `python -m scrollwright add saved-reels.txt` then `python -m scrollwright process`
 
 Re-run the export anytime — the ledger dedupes, so only new reels get processed.
+
+#### Turn the server on/off from the extension
+
+The Chrome extension can't run a command directly, so the popup's **▶ Start
+ScrollWright** button copies a ready-to-run command to your clipboard:
+
+```
+cd "<project-root>"; & "<python>" -m scrollwright ui
+```
+
+PowerShell syntax — paste straight into Windows PowerShell / Windows Terminal.
+For **cmd.exe** use `cd /d "<project-root>" && "<python>" -m scrollwright ui`
+instead; for bash/zsh use `cd "<project-root>" && <python> -m scrollwright ui`.
+
+Paste it into a terminal and hit Enter. The server starts, the web UI opens,
+and the popup's status light goes green. One terminal, stays up until you close
+it (Ctrl+C).
+
+To stop: close the terminal (Ctrl+C), or run `taskkill /F /IM python.exe`.
+The copy-to-clipboard command above is the recommended way; a `.bat` launcher
+in the project root works too if you prefer the Win+R path (the `.bat` files
+aren't shipped in the repo — see `.gitignore`).
 
 ## Configuration (`.env`)
 

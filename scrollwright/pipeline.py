@@ -15,8 +15,12 @@ from .core import PROMPT_PATH
 
 _GEMINI_MODELS = (
     "gemini-3.8-flash",   # newest; sometimes congested on free tier
-    "gemini-3.5-flash",   # fallbacks, slightly older but usually available
-    "gemini-2.5-flash",
+    "gemini-3.7-flash",   # fallbacks — the API list confirmed all of these
+    "gemini-3.6-flash",   # exist for this key; more links in the chain
+    "gemini-3.5-flash",   # means a burst of 503s on one model doesn't
+    "gemini-flash-latest",  # fail the reel
+    "gemini-3.1-flash-lite",  # always-on lite model (verified 200 OK)
+    "gemini-2.5-flash",   # 404s for new keys — skipped instantly, kept last
 )
 _GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -185,6 +189,12 @@ def write_note_gemini(material: str, url: str, video_uri: str | None = None) -> 
                 if exc.code == 400:
                     print(f"    Gemini HTTP 400: {err_body[:200]}")
                     return None  # bad key/request — don't bother retrying
+                if exc.code == 404:
+                    # Deterministic — retrying the same model won't help.
+                    # Log the body: it tells us whether the MODEL or an
+                    # uploaded FILE was not found.
+                    print(f"    Gemini {model} HTTP 404: {err_body[:200]}")
+                    break
                 if exc.code == 429:
                     # Quota errors don't clear in seconds — skip to next model.
                     print(f"    Gemini {model} HTTP 429 (quota)")
@@ -242,18 +252,23 @@ def slugify(title: str, fallback: str) -> str:
     return s or fallback
 
 
-def write_note(shortcode: str, out: dict, author: str | None) -> Path:
+def write_note(shortcode: str, out: dict, author: str | None, transcript: str | None = None, caption: str | None = None) -> Path:
     """Prepend system-owned frontmatter to the AI body and write the file.
 
     Filename = slugified title only (no date prefix). The saved date lives in
     frontmatter only. Collisions append the shortcode.
+
+    After the AI body we append a system-owned `## Raw source` section with
+    the VERBATIM caption + transcript — Gemini never sees or rewrites this
+    part, so the note always carries the full source material for later
+    processing (Hermes agent / RAG).
     """
     title = out.get("title") or f"Reel {shortcode}"
     slug = slugify(title, f"reel-{shortcode}")
     notes_dir = core.VAULT_NOTES_DIR
     path = notes_dir / f"{slug}.md"
     if path.exists():
-        path = notes_dir / f"{slug}-{shortcode}.md"
+        path = notes_dir / f"{slug}-{shortcode}-{date.today().isoformat()}.md"
     front = (
         "---\n"
         f'title: "{title}"\n'
@@ -265,7 +280,27 @@ def write_note(shortcode: str, out: dict, author: str | None) -> Path:
         "status: inbox\n"
         "---\n\n"
     )
-    path.write_text(front + out["body"] + "\n", encoding="utf-8")
+
+    body = out.get("body", "").rstrip()
+
+    # Inline tags line (frontmatter tags were removed by vault rule — keep
+    # the info in the body so nothing Gemini extracted is lost).
+    tags = out.get("tags") or []
+    if tags:
+        body += "\n\n**Tags:** " + " ".join(f"#{t}" for t in tags)
+
+    # System-owned raw source: appended verbatim, never model-generated.
+    # This is the "web clipper" guarantee — full transcript + caption always
+    # in the note, below everything else.
+    src_parts = []
+    if caption and caption.strip():
+        src_parts.append(f"### Caption\n\n{caption.strip()}")
+    if transcript and transcript.strip():
+        src_parts.append(f"### Transcript\n\n{transcript.strip()}")
+    if src_parts:
+        body += "\n\n---\n\n## Raw source\n\n" + "\n\n".join(src_parts)
+
+    path.write_text(front + body + "\n", encoding="utf-8")
     return path
 
 
@@ -291,8 +326,14 @@ def process_one(row) -> str:
         audio.unlink(missing_ok=True)
 
     # Let Gemini watch the reel itself (screen content, demos, code).
-    # Disable in .env with WATCH_VIDEOS=false to save tokens/time.
-    watch = core.os.environ.get("WATCH_VIDEOS", "true").lower() != "false"
+    # Per-reel override from the extension toggle (reels.watch column);
+    # falls back to WATCH_VIDEOS env default when unset (NULL).
+    env_watch = core.os.environ.get("WATCH_VIDEOS", "true").lower() != "false"
+    try:
+        row_watch = row["watch"]
+    except (IndexError, KeyError):
+        row_watch = None
+    watch = env_watch if row_watch is None else bool(row_watch)
     video = fetch_video(url, sc) if watch else None
     video_uri = None
     if video and api_key:
@@ -318,7 +359,7 @@ def process_one(row) -> str:
         print("    [FAIL] no note produced")
         return "failed"
 
-    path = write_note(sc, out, meta["author"])
+    path = write_note(sc, out, meta["author"], transcript=transcript, caption=meta["caption"])
     core.mark_done(sc, str(path))
     print(f"    [OK] {path.name}")
     return "done"

@@ -94,25 +94,50 @@ def init_db() -> None:
                 added_at    TEXT NOT NULL DEFAULT (datetime('now')),
                 status      TEXT NOT NULL DEFAULT 'pending',
                 note_path   TEXT,
-                error       TEXT
+                error       TEXT,
+                watch       INTEGER
             )
             """
         )
+        # Migration for DBs created before the per-reel watch flag existed.
+        # watch: NULL = use WATCH_VIDEOS env default, 1 = force video, 0 = transcript only.
+        try:
+            con.execute("ALTER TABLE reels ADD COLUMN watch INTEGER")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
-def add_urls(urls: dict[str, str]) -> tuple[int, int]:
-    """Insert URLs. Returns (new, duplicates)."""
+def add_urls(urls: dict[str, str], watch: bool | None = None) -> tuple[int, int]:
+    """Insert URLs. Returns (new, duplicates).
+
+    watch: True = video+transcript note, False = transcript-only note,
+    None = leave unset (pipeline falls back to WATCH_VIDEOS env default).
+    """
     new = dup = 0
+    watch_val = None if watch is None else (1 if watch else 0)
     with _connect() as con:
         for code, url in urls.items():
-            cur = con.execute(
-                "INSERT OR IGNORE INTO reels (shortcode, url) VALUES (?, ?)",
-                (code, url),
-            )
+            if watch_val is None:
+                cur = con.execute(
+                    "INSERT OR IGNORE INTO reels (shortcode, url) VALUES (?, ?)",
+                    (code, url),
+                )
+            else:
+                cur = con.execute(
+                    "INSERT OR IGNORE INTO reels (shortcode, url, watch) VALUES (?, ?, ?)",
+                    (code, url, watch_val),
+                )
             if cur.rowcount:
                 new += 1
             else:
                 dup += 1
+                # User re-clicked with an explicit mode while the row is
+                # still queued — honor the latest choice.
+                if watch_val is not None:
+                    con.execute(
+                        "UPDATE reels SET watch = ? WHERE shortcode = ? AND status = 'pending'",
+                        (watch_val, code),
+                    )
     return new, dup
 
 
@@ -121,7 +146,7 @@ def claim_batch(limit: int) -> list[sqlite3.Row]:
     rows = []
     with _connect() as con:
         selected = con.execute(
-            "SELECT shortcode, url FROM reels WHERE status = 'pending' ORDER BY added_at LIMIT ?",
+            "SELECT shortcode, url, watch FROM reels WHERE status = 'pending' ORDER BY added_at LIMIT ?",
             (limit,),
         ).fetchall()
         for r in selected:
