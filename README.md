@@ -1,6 +1,4 @@
----
-tags:
----
+
 # 🎬 ScrollWright
 
 **Turn your saved Instagram Reels into searchable Obsidian notes — free, local, deduped.**
