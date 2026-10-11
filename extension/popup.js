@@ -27,6 +27,11 @@ let currentMode = MODES.NOTE;
 // (default true = current WATCH_VIDEOS behavior).
 let watchVideo = true;
 
+// Notes folder the server reports (value = <vault>/ScrollWright). The
+// configure dialog edits the vault ROOT, so vaultRoot() strips the trailing
+// ScrollWright when prefilling.
+let currentVaultPath = "";
+
 function log(text, cls = "") {
   const line = document.createElement("div");
   if (cls) line.className = cls;
@@ -137,6 +142,18 @@ const PYTHON_BIN = "python";
 
 const STORAGE_KEY_PROJECT_ROOT = "sw_project_root";
 const STORAGE_KEY_PYTHON_BIN = "sw_python_bin";
+
+// Cached user overrides (filled at boot) so the configure dialog can prefill
+// synchronously — chrome.storage is async-only, but the dialog must open the
+// moment the button is clicked.
+let storedProjectRoot = "";
+let storedPythonBin = "";
+
+// /vault returns the NOTES dir (<vault>/ScrollWright); the dialog edits the
+// vault root, so strip the trailing ScrollWright before prefilling.
+function vaultRoot(notesDir) {
+  return String(notesDir || "").replace(/\\/g, "/").replace(/\/ScrollWright\/?$/, "");
+}
 
 async function projectRoot() {
   // User override (set via ⚙ Configure paths).
@@ -274,8 +291,8 @@ $("#startBtn").addEventListener("click", async () => {
 
 function openConfigureDialog() {
   // Build a small inline modal with the current values.
-  const currentRoot = DEFAULT_PROJECT_ROOT;
-  const currentPython = PYTHON_BIN;
+  const currentRoot = storedProjectRoot || DEFAULT_PROJECT_ROOT;
+  const currentPython = storedPythonBin || PYTHON_BIN;
 
   const overlay = document.createElement("div");
   overlay.style.cssText = `
@@ -296,7 +313,7 @@ function openConfigureDialog() {
 
   const hint = document.createElement("div");
   hint.style.cssText = "font-size:11px;color:#6b7280;margin-bottom:10px;line-height:1.5";
-  hint.innerHTML = `Set these to your own paths. The <strong>▶ Start ScrollWright</strong> button copies a command using these. Saved in this browser only (chrome.storage.local).`;
+  hint.innerHTML = `Paths saved in this browser (chrome.storage.local); the notes folder is written to the project <strong>.env</strong>. Notes → &lt;vault&gt;/ScrollWright/.`;
 
   const rootLabel = document.createElement("label");
   rootLabel.style.cssText = "display:block;font-size:11px;color:#6b7280;margin-bottom:4px";
@@ -318,6 +335,17 @@ function openConfigureDialog() {
   pyInput.style.cssText = "width:100%;padding:7px 9px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;margin-bottom:12px";
   pyInput.setAttribute("spellcheck", "false");
 
+  const vaultLabel = document.createElement("label");
+  vaultLabel.style.cssText = "display:block;font-size:11px;color:#6b7280;margin-bottom:4px";
+  vaultLabel.textContent = "Notes folder (your Obsidian vault root):";
+
+  const vaultInput = document.createElement("input");
+  vaultInput.type = "text";
+  vaultInput.value = vaultRoot(currentVaultPath);
+  vaultInput.placeholder = "C:/path/to/vault";
+  vaultInput.style.cssText = "width:100%;padding:7px 9px;border-radius:6px;border:1px solid #d1d5db;font-size:12px;margin-bottom:12px";
+  vaultInput.setAttribute("spellcheck", "false");
+
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn-primary";
   saveBtn.style.marginBottom = "6px";
@@ -333,6 +361,8 @@ function openConfigureDialog() {
   dialog.appendChild(rootInput);
   dialog.appendChild(pyLabel);
   dialog.appendChild(pyInput);
+  dialog.appendChild(vaultLabel);
+  dialog.appendChild(vaultInput);
   dialog.appendChild(saveBtn);
   dialog.appendChild(cancelBtn);
   overlay.appendChild(dialog);
@@ -360,11 +390,26 @@ function openConfigureDialog() {
         [STORAGE_KEY_PROJECT_ROOT]: newRoot,
         [STORAGE_KEY_PYTHON_BIN]: newPython,
       });
+      storedProjectRoot = newRoot;
+      storedPythonBin = newPython;
       log(`Paths saved — ▶ Start ScrollWright will use them now.`, "ok");
     } catch (e) {
       log("Could not save paths: " + (e && e.message ? e.message : e), "err");
     }
     close();
+    // The vault lives in the project .env (server-side), not browser storage.
+    // Sent after close() so a slow/offline server never blocks the dialog.
+    const newVault = vaultInput.value.trim();
+    if (newVault && newVault !== vaultRoot(currentVaultPath)) {
+      send({ type: "setVault", path: newVault }).then((res) => {
+        if (res.ok && res.data && res.data.path) {
+          currentVaultPath = res.data.path;
+          log("Notes folder → " + newVault, "ok");
+        } else {
+          log((res.data && res.data.error) || "Vault folder not found", "err");
+        }
+      });
+    }
   });
 
   setTimeout(() => rootInput.focus(), 0);
@@ -376,6 +421,8 @@ $("#configureBtn").addEventListener("click", openConfigureDialog);
 (async () => {
   try {
     const stored = await chrome.storage.local.get([STORAGE_KEY_PROJECT_ROOT, STORAGE_KEY_PYTHON_BIN]);
+    storedProjectRoot = (stored && stored[STORAGE_KEY_PROJECT_ROOT]) || "";
+    storedPythonBin = (stored && stored[STORAGE_KEY_PYTHON_BIN]) || "";
     if (stored && (stored[STORAGE_KEY_PROJECT_ROOT] || stored[STORAGE_KEY_PYTHON_BIN])) {
       const r = stored[STORAGE_KEY_PROJECT_ROOT] ? `project=${stored[STORAGE_KEY_PROJECT_ROOT]}` : "";
       const p = stored[STORAGE_KEY_PYTHON_BIN] ? `python=${stored[STORAGE_KEY_PYTHON_BIN]}` : "";
@@ -423,7 +470,7 @@ async function refreshStatus() {
 
 async function loadVault() {
   const res = await send({ type: "getVault" });
-  if (res.ok && res.data && res.data.path) $("#vault").value = res.data.path;
+  if (res.ok && res.data && res.data.path) currentVaultPath = res.data.path;
 }
 
 // ---- note this reel (only in note mode) ----

@@ -1,3 +1,6 @@
+---
+tags:
+---
 # 🎬 ScrollWright
 
 **Turn your saved Instagram Reels into searchable Obsidian notes — free, local, deduped.**
@@ -121,8 +124,9 @@ python -m scrollwright serve        # leave it running while you browse
 - Popup → **📥 Harvest saved folder**: auto-scrolls your saved folder (works on
   `all-posts` *and* individual collections like `saved/dev-quests/`) and queues
   everything new. The ledger dedupes, so re-harvests only add what's new.
-- Popup → **Notes folder**: point the pipeline at any vault folder on the fly
-  (updates `.env`).
+- Popup → **Notes folder** (inside **⚙ Configure paths & vault**): point the
+  pipeline at any vault folder on the fly (updates `.env`). The popup itself
+  stays compact — Start, both toggles, and Note this reel all fit on screen.
 - **Turn on / off ScrollWright:** the popup's **▶ Start ScrollWright** button
   shows the command you need to run (a small code block with a **Copy** button
   next to it). Click **Copy**, paste into a terminal, hit Enter. That's
@@ -130,10 +134,11 @@ python -m scrollwright serve        # leave it running while you browse
   chains, `&` runs the exe), which is Windows' default terminal. The extension
   can't run commands directly, so this is the handoff.
   
-  There's also a **⚙ Configure paths** button in the popup for anyone who isn't
-  on the machine this was built on: set your project folder and python binary
-  path there (saved in your browser's local storage), and the command updates
-  with your values.
+  There's also a **⚙ Configure paths & vault** button in the popup for anyone
+  who isn't on the machine this was built on: set your project folder and
+  python binary path there (saved in your browser's local storage) plus the
+  notes folder (written to the project `.env`), and the command updates with
+  your values.
 - Server offline? The extension falls back to the txt download automatically.
 
 The server binds `127.0.0.1` only and speaks to nothing but your browser.
@@ -150,10 +155,11 @@ The popup ships with placeholder defaults you'll need to change:
 
 You have two ways to set these for your own machine:
 
-1. **Easier:** click **⚙ Configure paths** in the popup. Set your project folder
-   and python path, click Save. The values are stored in your browser's
-   `chrome.storage.local`, so they persist across popup opens and don't touch the
-   extension files.
+1. **Easier:** click **⚙ Configure paths & vault** in the popup. Set your
+   project folder and python path, click Save. The values are stored in your
+   browser's `chrome.storage.local`, so they persist across popup opens and
+   don't touch the extension files. (The notes-folder field is saved
+   server-side in `.env`, not in the browser.)
 2. **Direct:** edit `DEFAULT_PROJECT_ROOT` and `PYTHON_BIN` at the top of
    `extension/popup.js` — or set `PYTHON_BIN = "python"` if `python` is on your
    PATH and you don't need the full path.

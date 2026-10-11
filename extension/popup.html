@@ -79,37 +79,21 @@
 <body>
   <h1><span class="dot" id="dot"></span> ScrollWright <span class="muted" id="srv"></span></h1>
 
-  <div class="card">
-    <div class="flex-between">
-      <span class="mode-label">Floating button mode</span>
-    </div>
+  <button id="startBtn" class="btn-primary">▶ Start ScrollWright</button>
+  <button id="configureBtn" class="btn-secondary" style="width:100%;margin-top:6px">⚙ Configure paths &amp; vault</button>
+
+  <div class="card" style="padding:10px 12px">
+    <div class="mode-label">Floating button</div>
     <div class="mode-toggle" role="group" aria-label="Floating button mode">
       <button id="modeNote" class="active">📝 Note this reel</button>
       <button id="modeScroll">📥 Scroll / harvest</button>
     </div>
-    <div class="hint">The floating button on instagram.com follows this mode.</div>
-  </div>
-
-  <div class="card">
-    <div class="flex-between">
-      <span class="mode-label">Note content</span>
-    </div>
+    <div class="mode-label" style="margin-top:8px">Note content</div>
     <div class="mode-toggle" role="group" aria-label="Note content">
       <button id="watchVideo" class="active">🎬 Video + transcript</button>
       <button id="watchText">📝 Transcript only</button>
     </div>
-    <div class="hint">Video = Gemini watches the reel too (code, demos, on-screen text). Transcript only = faster, ~4x fewer tokens, no video upload.</div>
-  </div>
-
-  <button id="startBtn" class="btn-primary">▶ Start ScrollWright</button>
-  <button id="configureBtn" class="btn-secondary" style="width:100%;margin-top:6px">⚙ Configure paths</button>
-
-  <div class="card" style="padding:10px 12px">
-    <div class="row">
-      <label>Notes folder</label>
-      <input type="text" id="vault" placeholder="C:\path\to\vault" spellcheck="false" />
-    </div>
-    <div class="hint">Enter a folder + Enter to switch vault. Notes → &lt;vault&gt;/ScrollWright/</div>
+    <div class="hint">Video = Gemini watches it · Transcript only ≈ 4× fewer tokens.</div>
   </div>
 
   <div class="status" id="status">
@@ -121,8 +105,7 @@
   <button id="harvest" class="btn-secondary" disabled>📥 Harvest saved folder</button>
 
   <div id="log"></div>
-  <div class="hint">Web UI opens in a new tab — that's where you add/reprocess/see everything.</div>
-  <div class="hint">Turn on / off: click ▶ Start ScrollWright — it shows the command to run with a Copy button. Paste into a terminal, hit Enter.</div>
+  <div class="hint">▶ Start copies the run command — paste in a terminal, hit Enter. Web UI opens in a new tab.</div>
 
   <script src="popup.js"></script>
 </body>
